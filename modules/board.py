@@ -1,5 +1,57 @@
 """チェスボードの定義"""
 
+# (directions, is_unlimited) の形式で駒の移動設定を定義
+PIECE_MOVE_CONFIG = {
+    "rook": (
+        [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+        ],
+        True,
+    ),
+    "king": (
+        [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ],
+        False,
+    ),
+    "queen": (
+        [
+            (1, 0),
+            (-1, 0),
+            (0, 1),
+            (0, -1),
+            (1, 1),
+            (1, -1),
+            (-1, 1),
+            (-1, -1),
+        ],
+        True,
+    ),
+    "knight": (
+        [
+            (2, 1),
+            (2, -1),
+            (-2, 1),
+            (-2, -1),
+            (1, 2),
+            (1, -2),
+            (-1, 2),
+            (-1, -2),
+        ],
+        False,
+    ),
+}
+
 
 class Board:
     def __init__(
@@ -16,6 +68,7 @@ class Board:
         self.center = (size[0] / 2, size[1] / 2)
         # 2次元配列で盤面を表現
         # 1次元配列で必要になるインデックス計算を避ける
+        # numpyにすると逆に遅くなるためリストで実装
         self.board = [
             [0] * size[1] for _ in range(size[0])
         ]  # 0: not visited, 1: visited
@@ -82,67 +135,12 @@ class Board:
         Returns:
             list[tuple[int, int]]: 移動可能な位置のリスト
         """
-        # コマの種類で場合分けして移動可能な位置を取得する
-        match self.piece_type:
-            case "rook":
-                # 縦横に無制限に移動できる
-                directions = [
-                    (1, 0),
-                    (-1, 0),
-                    (0, 1),
-                    (0, -1),
-                ]
-                return self._check_positions_in_directions(
-                    directions, is_unlimited=True
-                )
-            case "queen":
-                # 縦横斜め全方向に無制限に移動できる
-                directions = [
-                    (1, 0),
-                    (-1, 0),
-                    (0, 1),
-                    (0, -1),
-                    (1, 1),
-                    (1, -1),
-                    (-1, 1),
-                    (-1, -1),
-                ]
-                return self._check_positions_in_directions(
-                    directions, is_unlimited=True
-                )
-            case "king":
-                # 周囲のいずれのマスに移動できる
-                directions = [
-                    (1, 0),
-                    (-1, 0),
-                    (0, 1),
-                    (0, -1),
-                    (1, 1),
-                    (1, -1),
-                    (-1, 1),
-                    (-1, -1),
-                ]
-                return self._check_positions_in_directions(directions)
-            case "knight":
-                # L字型に移動できる
-                directions = [
-                    (2, 1),
-                    (2, -1),
-                    (-2, 1),
-                    (-2, -1),
-                    (1, 2),
-                    (1, -2),
-                    (-1, 2),
-                    (-1, -2),
-                ]
-                return self._check_positions_in_directions(directions)
-            case _:
-                # 対応していない駒の場合はエラーを投げる
-                # 通常は初期化時にチェックしているため起こり得ないエラー
-                raise RuntimeError("対応していない駒の種類です")
+        # コマの種類に応じた方向と移動制限を辞書から取得
+        directions, is_unlimited = PIECE_MOVE_CONFIG[self.piece_type]
+        return self._check_positions_in_directions(directions, is_unlimited)
 
     def _check_positions_in_directions(
-        self, directions: list[tuple[int, int]], is_unlimited: bool = False
+        self, directions: list[tuple[int, int]], is_unlimited: bool
     ) -> list[tuple[int, int]]:
         """現在の位置から指定された方向で移動可能な未訪問の位置を取得する
 
