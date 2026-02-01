@@ -155,8 +155,9 @@ def _check_horizontal_symmetry(board: Board) -> bool:
         return False
 
     # 訪問済みマスの配置が左右対称かチェック
+    half_cols = (cols + 1) // 2
     for r in range(rows):
-        for c in range(cols):
+        for c in range(half_cols):
             left_idx = r * cols + c
             right_idx = r * cols + (cols - 1 - c)
             if board.board[left_idx] != board.board[right_idx]:
@@ -181,7 +182,8 @@ def _check_vertical_symmetry(board: Board) -> bool:
         return False
 
     # 訪問済みマスの配置が上下対称かチェック
-    for r in range(rows):
+    half_rows = (rows + 1) // 2
+    for r in range(half_rows):
         for c in range(cols):
             top_idx = r * cols + c
             bottom_idx = (rows - 1 - r) * cols + c
