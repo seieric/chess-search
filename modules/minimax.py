@@ -158,9 +158,7 @@ def _check_horizontal_symmetry(board: Board) -> bool:
     half_cols = (cols + 1) // 2
     for r in range(rows):
         for c in range(half_cols):
-            left_idx = r * cols + c
-            right_idx = r * cols + (cols - 1 - c)
-            if board.board[left_idx] != board.board[right_idx]:
+            if board.board[r][c] != board.board[r][cols - 1 - c]:
                 return False
 
     return True
@@ -185,9 +183,7 @@ def _check_vertical_symmetry(board: Board) -> bool:
     half_rows = (rows + 1) // 2
     for r in range(half_rows):
         for c in range(cols):
-            top_idx = r * cols + c
-            bottom_idx = (rows - 1 - r) * cols + c
-            if board.board[top_idx] != board.board[bottom_idx]:
+            if board.board[r][c] != board.board[rows - 1 - r][c]:
                 return False
 
     return True

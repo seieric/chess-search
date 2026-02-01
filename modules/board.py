@@ -14,14 +14,18 @@ class Board:
         """
         self.size = size
         self.center = (size[0] / 2, size[1] / 2)
-        self.board = [0] * (size[0] * size[1])  # 0: not visited, 1: visited
+        # 2次元配列で盤面を表現
+        # 1次元配列で必要になるインデックス計算を避ける
+        self.board = [
+            [0] * size[1] for _ in range(size[0])
+        ]  # 0: not visited, 1: visited
 
         if not (
             0 <= initial_position[0] < size[0] and 0 <= initial_position[1] < size[1]
         ):
             raise ValueError("初期位置がボードの範囲外です")
         self.pos = initial_position
-        self._mark_visited(initial_position)
+        self.board[initial_position[0]][initial_position[1]] = 1
 
         if piece_type not in ["rook", "king", "queen", "knight"]:
             raise ValueError("対応していない駒の種類です")
@@ -38,7 +42,7 @@ class Board:
         """
         old_position = self.pos
         self.pos = position
-        self._mark_visited(position)
+        self.board[position[0]][position[1]] = 1
         return old_position
 
     def undo_move(
@@ -50,7 +54,7 @@ class Board:
             unmark_position (tuple[int, int]): 訪問マークを解除する位置
             restore_position (tuple[int, int]): 駒を戻す位置
         """
-        self._unmark_visited(unmark_position)
+        self.board[unmark_position[0]][unmark_position[1]] = 0
         self.pos = restore_position
 
     def print_board(self):
@@ -65,9 +69,9 @@ class Board:
             for j in range(self.size[1]):
                 if (i, j) == self.pos:
                     row.append("P")  # 駒の位置
-                elif self.board[i * self.size[1] + j] == 1:
+                elif self.board[i][j] == 1:
                     row.append("x")  # 訪問済みのマス
-                elif self.board[i * self.size[1] + j] == 0:
+                else:
                     row.append("-")  # 未訪問のマス
             print(" ".join(row))
         print()
@@ -156,8 +160,7 @@ class Board:
                 self.pos[1] + direction[1],
             )
             while 0 <= new_pos[0] < self.size[0] and 0 <= new_pos[1] < self.size[1]:
-                index = new_pos[0] * self.size[1] + new_pos[1]
-                if self.board[index] == 0:
+                if self.board[new_pos[0]][new_pos[1]] == 0:
                     # 未訪問の位置なら移動可能
                     available_positions.append(new_pos)
 
@@ -172,21 +175,3 @@ class Board:
                 )
 
         return available_positions
-
-    def _mark_visited(self, position: tuple[int, int]):
-        """指定された位置を訪問済みにマークする
-
-        Args:
-            position (tuple[int, int]): 訪問済みにする位置
-        """
-        index = position[0] * self.size[1] + position[1]
-        self.board[index] = 1
-
-    def _unmark_visited(self, position: tuple[int, int]):
-        """指定された位置の訪問済みマークを解除する
-
-        Args:
-            position (tuple[int, int]): 訪問済みマークを解除する位置
-        """
-        index = position[0] * self.size[1] + position[1]
-        self.board[index] = 0
