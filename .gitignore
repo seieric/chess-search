@@ -11,3 +11,5 @@ wheels/
 
 *.o
 chess_search
+
+logs/
