@@ -179,10 +179,6 @@ class Board:
         Args:
             position (tuple[int, int]): 訪問済みにする位置
         """
-        assert 0 <= position[0] < self.size[0] and 0 <= position[1] < self.size[1], (
-            "位置がボードの範囲外です"
-        )
-
         index = position[0] * self.size[1] + position[1]
         self.board[index] = 1
 
@@ -192,9 +188,5 @@ class Board:
         Args:
             position (tuple[int, int]): 訪問済みマークを解除する位置
         """
-        assert 0 <= position[0] < self.size[0] and 0 <= position[1] < self.size[1], (
-            "位置がボードの範囲外です"
-        )
-
         index = position[0] * self.size[1] + position[1]
         self.board[index] = 0
