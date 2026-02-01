@@ -149,15 +149,9 @@ def _check_horizontal_symmetry(board: Board) -> bool:
         bool: 左右対称であるかどうか
     """
     rows, cols = board.size
-    current_pos = board.pos
 
     # 現在位置が中央列にあるかチェック
-    if cols % 2 == 1:
-        # 奇数列数なら中央列にいる必要がある
-        if current_pos[1] != cols // 2:
-            return False
-    else:
-        # 偶数列数なら中央列がなく対称にならない
+    if board.pos[1] * 2 != cols - 1:
         return False
 
     # 訪問済みマスの配置が左右対称かチェック
@@ -181,15 +175,9 @@ def _check_vertical_symmetry(board: Board) -> bool:
         bool: 上下対称であるかどうか
     """
     rows, cols = board.size
-    current_pos = board.pos
 
     # 現在位置が中央行にあるかチェック
-    if rows % 2 == 1:
-        # 奇数行数なら中央行にいる必要がある
-        if current_pos[0] != rows // 2:
-            return False
-    else:
-        # 偶数行数なら中央行がなく対称にならない
+    if board.pos[0] * 2 != rows - 1:
         return False
 
     # 訪問済みマスの配置が上下対称かチェック
