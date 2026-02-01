@@ -25,7 +25,7 @@ def minimax(
         symmetry (bool): 対称性を考慮して探索を削減するかどうか
 
     Returns:
-        bool: 先手が勝つ場合はTrue、後手が勝つ場合はFalse
+        bool: 勝者（True: 先手, False: 後手）
     """
     # 移動できるマスを取得する
     available_positions = board.get_available_positions()
@@ -62,16 +62,10 @@ def minimax(
         result = minimax(board, depth + 1, not player, verbose, heuristic, symmetry)
         board.undo_move(position, original_pos)
 
-        if player:
-            # 先手のターン
-            if result:
-                # 先手の勝ち
-                return True
-        else:
-            # 後手のターン
-            if not result:
-                # 後手の勝ち
-                return False
+        # 得られた勝者が現在のプレイヤーであれば、その手を選ぶ
+        if result == player:
+            # 勝者は現在のプレイヤーとなる
+            return player
 
     # 現在のプレイヤーが勝てる移動がなかった場合、現在のプレイヤーの負け
     return not player
