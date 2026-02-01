@@ -1,5 +1,4 @@
-#ifndef BOARD_H
-#define BOARD_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -41,5 +40,3 @@ static inline unsigned char board_get(const Board *board, int row, int col) {
 static inline void board_set(Board *board, int row, int col, unsigned char value) {
     board->board[row * board->cols + col] = value;
 }
-
-#endif // BOARD_H

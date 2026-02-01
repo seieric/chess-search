@@ -1,5 +1,4 @@
-#ifndef MINIMAX_H
-#define MINIMAX_H
+#pragma once
 
 #include "board.h"
 #include <stdbool.h>
@@ -11,5 +10,3 @@ typedef struct {
 
 MinimaxResult minimax(Board *board, int depth, bool player, 
                      bool verbose, bool heuristic, bool symmetry);
-
-#endif // MINIMAX_H
