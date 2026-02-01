@@ -10,12 +10,13 @@ def main(args: argparse.Namespace):
     piece_type = args.piece_type
     verbose = args.verbose
     heuristic = args.heuristic
+    symmetry = args.symmetry
 
     # チェスボードを初期化する
     board = Board(board_size, initial_position, piece_type)
     board.print_board()
 
-    first_player_wins = minimax(board, 0, True, verbose, heuristic)
+    first_player_wins = minimax(board, 0, True, verbose, heuristic, symmetry)
     if first_player_wins:
         print("先手必勝")
     else:
@@ -58,6 +59,11 @@ if __name__ == "__main__":
         "--heuristic",
         action="store_true",
         help="ヒューリスティクスの利用",
+    )
+    parser.add_argument(
+        "--symmetry",
+        action="store_true",
+        help="対称性の利用",
     )
     args = parser.parse_args()
     main(args)

@@ -13,6 +13,7 @@ class Board:
             piece_type (str): 駒の種類（"rook", "king", "queen", "knight"）
         """
         self.size = size
+        self.center = (size[0] / 2, size[1] / 2)
         self.board = [0] * (size[0] * size[1])  # 0: not visited, 1: visited
 
         if not (
