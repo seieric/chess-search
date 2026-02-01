@@ -16,11 +16,14 @@ def main(args: argparse.Namespace):
     board = Board(board_size, initial_position, piece_type)
     board.print_board()
 
-    first_player_wins = minimax(board, 0, True, verbose, heuristic, symmetry)
+    first_player_wins, node_count = minimax(
+        board, 0, True, verbose, heuristic, symmetry
+    )
     if first_player_wins:
         print("先手必勝")
     else:
         print("後手必勝")
+    print(f"探索局面数: {node_count:,}")
 
 
 if __name__ == "__main__":

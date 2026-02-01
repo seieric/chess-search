@@ -13,7 +13,7 @@ def minimax(
     verbose: bool = False,
     heuristic: bool = False,
     symmetry: bool = False,
-) -> bool:
+) -> tuple[bool, int]:
     """minimax法を用いてゲーム木を探索する
 
     Args:
@@ -25,15 +25,18 @@ def minimax(
         symmetry (bool): 対称性を考慮して探索を削減するかどうか
 
     Returns:
-        bool: 勝者（True: 先手, False: 後手）
+        tuple[bool, int]: (勝者（True: 先手, False: 後手）, 探索した局面数)
     """
+    # 局面数をカウント（この関数が呼ばれるたびに1局面）
+    node_count = 1
+
     # 移動できるマスを取得する
     available_positions = board.get_available_positions()
 
     # 移動できるマスがなければ現在のプレイヤーの負けとなり終了
     if not available_positions:
         # 現在のプレイヤーの負け、つまり、もう一方のプレイヤーの勝ち
-        return not player
+        return not player, node_count
 
     # 対称性を考慮
     if symmetry and depth <= MAX_DEPTH_FOR_SYMMETRY:
@@ -59,16 +62,19 @@ def minimax(
         original_pos = board.make_move(position)
 
         # 移動結果を再帰的に評価する
-        result = minimax(board, depth + 1, not player, verbose, heuristic, symmetry)
+        result, child_nodes = minimax(
+            board, depth + 1, not player, verbose, heuristic, symmetry
+        )
+        node_count += child_nodes
         board.undo_move(position, original_pos)
 
         # 得られた勝者が現在のプレイヤーであれば、その手を選ぶ
         if result == player:
             # 勝者は現在のプレイヤーとなる
-            return player
+            return player, node_count
 
     # 現在のプレイヤーが勝てる移動がなかった場合、現在のプレイヤーの負け
-    return not player
+    return not player, node_count
 
 
 def _sort_moves_by_heuristic(
