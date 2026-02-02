@@ -193,11 +193,11 @@ class Board:
                 positions.append(self.position_map[i])
         return positions
 
-    def get_playout_result(self) -> bool:
-        """ランダムに手を選んでゲームを進めた場合に現在のプレイヤーが勝ちそうかどうかを返す
+    def get_playout_result(self) -> float:
+        """ランダムに手を選んでゲームを進めた場合に現在のプレイヤーが勝つ確率を返す
 
         Returns:
-            bool: 現在のプレイヤーが勝つ見込みが高い場合はTrue、負ける見込みが高い場合はFalse
+            float: 現在のプレイヤーの勝利確率
         """
         num_player_wins = 0
         current_board, current_pos = self.get_state()
@@ -220,7 +220,7 @@ class Board:
             # ゲーム終了後、ボード状態を元に戻す
             self.set_state(current_board, current_pos)
 
-        return num_player_wins * 2 >= self.num_playout
+        return num_player_wins / self.num_playout
 
     def get_canonical_state(self) -> tuple[int, int]:
         """現在の盤面状態の正規形（対称変換の中で最小の値）を返す

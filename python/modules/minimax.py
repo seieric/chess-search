@@ -16,7 +16,9 @@ def minimax(
     verbose: bool = False,
     heuristic: bool = False,
     symmetry: bool = False,
-) -> tuple[bool, int]:
+    alpha: float = 0.0,
+    beta: float = 1.0,
+) -> tuple[float, int]:
     """minimax法を用いてゲーム木を探索する
 
     Args:
@@ -28,7 +30,7 @@ def minimax(
         symmetry (bool): 対称性を考慮して探索を削減するかどうか
 
     Returns:
-        tuple[bool, int]: (勝者（True: 先手, False: 後手）, 探索した局面数)
+        tuple[float, int]: (先手の勝利確率, 探索した局面数)
     """
     # 局面数をカウント（この関数が呼ばれるたびに1局面）
     node_count = 1
@@ -36,8 +38,8 @@ def minimax(
     # 一定深さではプレイアウトの結果を返す
     if depth >= MAX_DEPTH:
         # 現在のプレイヤーが勝つ見込みが高いかどうかを取得
-        player_win = board.get_playout_result()
-        return (player_win == player), node_count
+        player_win_prob = board.get_playout_result()
+        return (player_win_prob if player else 1.0 - player_win_prob), node_count
 
     # 移動できるマスを取得する
     available_positions = board.get_available_positions()
@@ -45,7 +47,7 @@ def minimax(
     # 移動できるマスがなければ現在のプレイヤーの負けとなり終了
     if not available_positions:
         # 現在のプレイヤーの負け、つまり、もう一方のプレイヤーの勝ち
-        return not player, node_count
+        return (0.0 if player else 1.0), node_count
 
     # 対称性を考慮
     if symmetry and depth <= MAX_DEPTH_FOR_SYMMETRY:
@@ -61,6 +63,9 @@ def minimax(
             f"depth={depth}, player={'先手' if player else '後手'}, available={available_positions}"
         )
 
+    # 先手(True)なら最大値を、後手(False)なら最小値を初期値に設定
+    best_value = 0.0 if player else 1.0
+
     # 可能な移動を順番に試していく
     for position in available_positions:
         if verbose:
@@ -72,18 +77,35 @@ def minimax(
 
         # 移動結果を再帰的に評価する
         result, child_nodes = minimax(
-            board, depth + 1, not player, verbose, heuristic, symmetry
+            board,
+            depth + 1,
+            not player,
+            verbose,
+            heuristic,
+            symmetry,
+            alpha,
+            beta,
         )
         node_count += child_nodes
         board.undo_move(position, original_pos)
 
-        # 得られた勝者が現在のプレイヤーであれば、その手を選ぶ
-        if result == player:
-            # 勝者は現在のプレイヤーとなる
-            return player, node_count
+        # Alpha-Beta枝刈り
+        if player:
+            # 先手は先手勝率を最大化したい
+            best_value = max(best_value, result)
+            alpha = max(alpha, best_value)
+            # beta値を上回ったら枝刈り
+            if alpha >= beta:
+                break
+        else:
+            # 後手は先手勝率を最小化したい
+            best_value = min(best_value, result)
+            beta = min(beta, best_value)
+            # alpha値を下回ったら枝刈り
+            if alpha >= beta:
+                break
 
-    # 現在のプレイヤーが勝てる移動がなかった場合、現在のプレイヤーの負け
-    return not player, node_count
+    return best_value, node_count
 
 
 def _sort_moves_by_heuristic(
