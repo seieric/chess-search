@@ -84,9 +84,8 @@ class Board:
         # 64bit整数でボードを表現
         self.board: int = 0  # bitの値が0なら未訪問、1なら訪問済み
 
-        # 位置からbit-indexを、bit-indexから位置を引けるようにする
+        # 位置からbit-indexを引けるようにする
         self.index_map = self._create_position_index_map(size)
-        self.position_map = self._create_index_position_map(size)
 
         if not (
             0 <= initial_position[0] < size[0] and 0 <= initial_position[1] < size[1]
@@ -104,6 +103,12 @@ class Board:
 
         # 対称変換用のマップ群
         self.op_maps = self._create_op_maps(size)
+
+        # ヒューリスティクス用の中心からの距離マップ (index -> distance)
+        self.dist_from_center_map = [
+            abs((i // size[1]) - self.center[0]) + abs((i % size[1]) - self.center[1])
+            for i in range(self.len)
+        ]
 
         self.num_playout = num_playout
 
@@ -125,33 +130,31 @@ class Board:
         self.board = board
         self.pos = position
 
-    def make_move(self, position: tuple[int, int]) -> tuple[int, int]:
+    def make_move(self, position: int) -> int:
         """駒を新しい位置に移動し、その位置を訪問済みとしてマークする
 
         Args:
-            position (tuple[int, int]): 駒の移動先の位置（縦, 横）
+            position (int): 駒の移動先の位置インデックス
 
         Returns:
-            tuple[int, int]: 移動前の位置
+            int: 移動前の位置インデックス
         """
-        old_position = self.position_map[self.pos]
-        self.pos = self.index_map[position]
+        old_position = self.pos
+        self.pos = position
         # 新しい位置を訪問済みとしてマーク
-        self.board |= 1 << self.index_map[position]
+        self.board |= 1 << position
         return old_position
 
-    def undo_move(
-        self, unmark_position: tuple[int, int], restore_position: tuple[int, int]
-    ):
+    def undo_move(self, unmark_position: int, restore_position: int):
         """移動を取り消し、ゲーム状態を元に戻す
 
         Args:
-            unmark_position (tuple[int, int]): 訪問マークを解除する位置
-            restore_position (tuple[int, int]): 駒を戻す位置
+            unmark_position (int): 訪問マークを解除する位置インデックス
+            restore_position (int): 駒を戻す位置インデックス
         """
         # 訪問マークを解除
-        self.board &= ~(1 << self.index_map[unmark_position])
-        self.pos = self.index_map[restore_position]
+        self.board &= ~(1 << unmark_position)
+        self.pos = restore_position
 
     def print_board(self):
         """チェスボードの状態を表示する"""
@@ -173,11 +176,11 @@ class Board:
             print(" ".join(row))
         print()
 
-    def get_available_positions(self) -> list[tuple[int, int]]:
+    def get_available_positions(self) -> list[int]:
         """現在の位置から移動可能で未訪問の位置のリストを取得する
 
         Returns:
-            list[tuple[int, int]]: 移動可能な位置のリスト
+            list[int]: 移動可能な位置インデックスのリスト
         """
         # 移動可能かつ未訪問
         available_positions = ~self.board & self.available_positions_map[self.pos]
@@ -186,10 +189,10 @@ class Board:
             return []
 
         # 位置リストを生成
-        positions = []
+        positions: list[int] = []
         for i in range(self.len):
             if (available_positions >> i) & 1:
-                positions.append(self.position_map[i])
+                positions.append(i)
         return positions
 
     def get_playout_result(self, current_player: bool) -> float:
@@ -245,22 +248,6 @@ class Board:
             candidates.append((new_pos, new_board))
 
         return min(candidates)
-
-    @staticmethod
-    def _create_index_position_map(size: tuple[int, int]) -> dict[int, tuple[int, int]]:
-        """インデックスから位置へのマッピングを作成する
-
-        Args:
-            size (tuple[int, int]): ボードのサイズ（縦, 横）
-
-        Returns:
-            dict[int, tuple[int, int]]: インデックスから位置へのマッピング
-        """
-        position_map: dict[int, tuple[int, int]] = {}
-        for i in range(size[0]):
-            for j in range(size[1]):
-                position_map[i * size[1] + j] = (i, j)
-        return position_map
 
     @staticmethod
     def _create_position_index_map(size: tuple[int, int]) -> dict[tuple[int, int], int]:

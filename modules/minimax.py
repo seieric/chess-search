@@ -13,11 +13,12 @@ def minimax(
     board: Board,
     depth: int,
     player: bool,
-    verbose: bool = False,
-    heuristic: bool = False,
-    symmetry: bool = False,
-    alpha: float = 0.0,
-    beta: float = 1.0,
+    verbose: bool,
+    heuristic: bool,
+    symmetry: bool,
+    alpha: float,
+    beta: float,
+    memo: dict[tuple[int, int, bool], float],
 ) -> tuple[float, int]:
     """minimax法を用いてゲーム木を探索する
 
@@ -28,10 +29,16 @@ def minimax(
         verbose (bool): ログ出力を行うかどうか
         heuristic (bool): 移動順序の最適化を行うかどうか
         symmetry (bool): 対称性を考慮して探索を削減するかどうか
+        memo (dict): メモ化用の辞書
 
     Returns:
         tuple[float, int]: (先手の勝利確率, 探索した局面数)
     """
+    # メモ化の確認
+    state_key = (board.board, board.pos, player)
+    if state_key in memo:
+        return memo[state_key], 0
+
     # 局面数をカウント（この関数が呼ばれるたびに1局面）
     node_count = 1
 
@@ -55,7 +62,7 @@ def minimax(
 
     # 移動順序を最適化
     if heuristic:
-        available_positions = _sort_moves_by_heuristic(board, available_positions)
+        _sort_moves_by_heuristic(board, available_positions)
 
     if verbose:
         print(" " * depth * 2, end="")
@@ -85,6 +92,7 @@ def minimax(
             symmetry,
             alpha,
             beta,
+            memo,
         )
         node_count += child_nodes
         board.undo_move(position, original_pos)
@@ -105,12 +113,12 @@ def minimax(
             if alpha >= beta:
                 break
 
+    # 結果をメモ化
+    memo[state_key] = best_value
     return best_value, node_count
 
 
-def _sort_moves_by_heuristic(
-    board: Board, positions: list[tuple[int, int]]
-) -> list[tuple[int, int]]:
+def _sort_moves_by_heuristic(board: Board, positions: list[int]):
     """ヒューリスティクスに基づき移動候補を並べ替える
 
     盤面の端や隅に近く詰みやすそうな手を先に探索できるようにする。
@@ -118,31 +126,21 @@ def _sort_moves_by_heuristic(
 
     Args:
         board (Board): 現在のチェスボードの状態
-        positions (list[tuple[int, int]]): 移動候補のリスト
-
-    Returns:
-        list[tuple[int, int]]: ソート済みの移動候補のリスト
+        positions (list[int]): 移動候補のリスト
     """
     # 端に近い位置を優先
-    return sorted(
-        positions,
-        key=lambda pos: -(
-            abs(pos[0] - board.center[0]) + abs(pos[1] - board.center[1])
-        ),
-    )
+    positions.sort(key=lambda pos: -board.dist_from_center_map[pos])
 
 
-def _filter_symmetric_moves(
-    board: Board, positions: list[tuple[int, int]]
-) -> list[tuple[int, int]]:
+def _filter_symmetric_moves(board: Board, positions: list[int]) -> list[int]:
     """左右上下対称となる手を除外し、探索候補を削減したリストを返す
 
     Args:
         board (Board): 現在のチェスボードの状態
-        positions (list[tuple[int, int]]): 移動候補のリスト
+        positions (list[int]): 移動候補のリスト
 
     Returns:
-        list[tuple[int, int]]: 対称性を考慮して削減された移動候補のリスト
+        list[int]: 対称性を考慮して削減された移動候補のリスト
     """
     unique_moves = []
     seen_states = set()
