@@ -107,6 +107,24 @@ class Board:
 
         self.num_playout = num_playout
 
+    def get_state(self) -> tuple[int, int]:
+        """現在のボードの状態を取得する
+
+        Returns:
+            tuple[int, int]: (盤面のビット表現, 駒の位置のインデックス)
+        """
+        return self.board, self.pos
+
+    def set_state(self, board: int, position: int):
+        """ボードの状態を設定する
+
+        Args:
+            board (int): 盤面のビット表現
+            position (int): 駒の位置のインデックス
+        """
+        self.board = board
+        self.pos = position
+
     def make_move(self, position: tuple[int, int]) -> tuple[int, int]:
         """駒を新しい位置に移動し、その位置を訪問済みとしてマークする
 
@@ -181,11 +199,11 @@ class Board:
             bool: 現在のプレイヤーが勝つ見込みが高い場合はTrue、負ける見込みが高い場合はFalse
         """
         num_player_wins = 0
+        current_board, current_pos = self.get_state()
         for _ in range(self.num_playout):
             player = True  # True: 先手, False: 後手
-            board = deepcopy(self)
             while True:
-                available_positions = board.get_available_positions()
+                available_positions = self.get_available_positions()
                 if not available_positions:
                     if not player:
                         # 後手が動けないなら先手の勝ち
@@ -194,11 +212,12 @@ class Board:
 
                 # ランダムに移動を選択
                 chosen_position = random.choice(available_positions)
-                board.make_move(chosen_position)
+                self.make_move(chosen_position)
 
                 # プレイヤー交代
                 player = not player
-            del board
+            # ゲーム終了後、ボード状態を元に戻す
+            self.set_state(current_board, current_pos)
 
         return num_player_wins * 2 >= self.num_playout
 
