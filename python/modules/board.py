@@ -75,6 +75,7 @@ class Board:
             raise ValueError("ボードのサイズは1から8の範囲で指定してください")
         self.size = size
         self.center = (size[0] / 2, size[1] / 2)
+        self.len = size[0] * size[1]
 
         if piece_type not in ["rook", "king", "queen", "knight"]:
             raise ValueError("対応していない駒の種類です")
@@ -126,6 +127,16 @@ class Board:
                     (lambda r, c: cols - 1 - c, lambda r, c: r),  # 270 Rotate
                 ]
             )
+
+        # 対称変換をあらかじめ計算する
+        self.op_maps: list[dict[int, int]] = []
+        for r_op, c_op in self.ops:
+            op_map: dict[int, int] = {}
+            for r in range(self.size[0]):
+                for c in range(self.size[1]):
+                    new_r, new_c = r_op(r, c), c_op(r, c)
+                    op_map[self.index_map[(r, c)]] = self.index_map[(new_r, new_c)]
+            self.op_maps.append(op_map)
 
         self.num_playout = num_playout
 
@@ -191,7 +202,7 @@ class Board:
 
         # 位置リストを生成
         positions = []
-        for i in range(self.size[0] * self.size[1]):
+        for i in range(self.len):
             if (available_positions >> i) & 1:
                 positions.append(self.position_map[i])
         return positions
@@ -264,25 +275,18 @@ class Board:
         Returns:
             tuple[int, int]: (駒の位置インデックス, 盤面)
         """
-        rows, cols = self.size
-        r_pos, c_pos = self.position_map[self.pos]
-
-        def get_state(r_map, c_map):
+        candidates: list[tuple[int, int]] = []
+        for op_map in self.op_maps:
             # 駒の位置を変換
-            new_r, new_c = r_map(r_pos, c_pos), c_map(r_pos, c_pos)
-            new_pos_idx = new_r * cols + new_c
+            new_pos = op_map[self.pos]
 
             # 盤面のビットを変換
             new_board = 0
-            # 訪問済みのビットだけループさせる
-            # ただしビット操作だけでやるのは複雑なので、全マス走査する
+            # ビット操作だけでやるのは複雑なので、全マス走査する
             # ボードサイズは最大8x8なので64回ループは許容範囲
-            for i in range(rows * cols):
+            for i in range(self.len):
                 if (self.board >> i) & 1:
-                    curr_r, curr_c = i // cols, i % cols
-                    tr, tc = r_map(curr_r, curr_c), c_map(curr_r, curr_c)
-                    new_board |= 1 << (tr * cols + tc)
-            return (new_pos_idx, new_board)
+                    new_board |= 1 << op_map[i]
+            candidates.append((new_pos, new_board))
 
-        candidates = [get_state(r_op, c_op) for r_op, c_op in self.ops]
         return min(candidates)
