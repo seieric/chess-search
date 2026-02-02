@@ -116,9 +116,9 @@ def _filter_symmetric_moves(
     rows, cols = board.size
 
     # 左右対称性
-    is_horizontal_symmetric = _check_horizontal_symmetry(board)
+    is_horizontal_symmetric = board.is_horizontal_symmetric
     # 上下対称性
-    is_vertical_symmetric = _check_vertical_symmetry(board)
+    is_vertical_symmetric = board.is_vertical_symmetric
 
     if not is_horizontal_symmetric and not is_vertical_symmetric:
         # 対称性がない場合は削減できない
@@ -137,56 +137,6 @@ def _filter_symmetric_moves(
             seen_canonical.add(canonical)
 
     return result
-
-
-def _check_horizontal_symmetry(board: Board) -> bool:
-    """ボード状態が左右対称かチェックする
-
-    Args:
-        board (Board): 現在のチェスボードの状態
-
-    Returns:
-        bool: 左右対称であるかどうか
-    """
-    rows, cols = board.size
-
-    # 現在位置が中央列にあるかチェック
-    if board.pos[1] * 2 != cols - 1:
-        return False
-
-    # 訪問済みマスの配置が左右対称かチェック
-    half_cols = (cols + 1) // 2
-    for r in range(rows):
-        for c in range(half_cols):
-            if board.board[r][c] != board.board[r][cols - 1 - c]:
-                return False
-
-    return True
-
-
-def _check_vertical_symmetry(board: Board) -> bool:
-    """ボード状態が上下対称かチェックする
-
-    Args:
-        board (Board): 現在のチェスボードの状態
-
-    Returns:
-        bool: 上下対称であるかどうか
-    """
-    rows, cols = board.size
-
-    # 現在位置が中央行にあるかチェック
-    if board.pos[0] * 2 != rows - 1:
-        return False
-
-    # 訪問済みマスの配置が上下対称かチェック
-    half_rows = (rows + 1) // 2
-    for r in range(half_rows):
-        for c in range(cols):
-            if board.board[r][c] != board.board[rows - 1 - r][c]:
-                return False
-
-    return True
 
 
 def _get_canonical_position(
