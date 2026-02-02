@@ -164,73 +164,6 @@ class Board:
                 positions.append(self.position_map[i])
         return positions
 
-    @property
-    def is_horizontal_symmetric(self) -> bool:
-        """ボード状態が左右対称かチェックする
-
-        Returns:
-            bool: 左右対称であるかどうか
-        """
-        rows, cols = self.size
-
-        # 現在位置を取得して中央列にあるかチェック
-        pos_row, pos_col = self.position_map[self.pos]
-        if pos_col * 2 != cols - 1:
-            return False
-
-        # 列ごとに左右対称性をチェック
-        half_cols = (cols + 1) // 2
-
-        for c in range(half_cols):
-            # 列cのビットパターンを抽出
-            left_col = 0
-            for r in range(rows):
-                if (self.board >> (r * cols + c)) & 1:
-                    left_col |= 1 << r
-
-            # 対応する右側の列のビットパターンを抽出
-            right_c = cols - 1 - c
-            right_col = 0
-            for r in range(rows):
-                if (self.board >> (r * cols + right_c)) & 1:
-                    right_col |= 1 << r
-
-            # 一致しない場合は即座にFalseを返す
-            if left_col != right_col:
-                return False
-
-        return True
-
-    @property
-    def is_vertical_symmetric(self) -> bool:
-        """ボード状態が上下対称かチェックする
-
-        Returns:
-            bool: 上下対称であるかどうか
-        """
-        rows, cols = self.size
-
-        # 現在位置を取得して中央行にあるかチェック
-        pos_row, pos_col = self.position_map[self.pos]
-        if pos_row * 2 != rows - 1:
-            return False
-
-        # 行ごとに上下対称性をチェック
-        row_mask = (1 << cols) - 1  # 1行分のビットマスク
-        half_rows = (rows + 1) // 2
-
-        for r in range(half_rows):
-            # r行目のビットを抽出
-            top_row = (self.board >> (r * cols)) & row_mask
-            # 対応する下側の行のビットを抽出
-            bottom_row = (self.board >> ((rows - 1 - r) * cols)) & row_mask
-
-            # 一致しない場合は即座にFalseを返す
-            if top_row != bottom_row:
-                return False
-
-        return True
-
     def _create_available_positions_map(self):
         """ボード上の各位置に対して移動可能な位置を格納した辞書を作成する"""
         self.available_positions_map: dict[int, int] = {}
@@ -265,3 +198,54 @@ class Board:
                         )
 
                 self.available_positions_map[self.index_map[start_position]] = bitmask
+
+    def get_canonical_state(self) -> tuple[int, int]:
+        """現在の盤面状態の正規形（対称変換の中で最小の値）を返す
+
+        Returns:
+            tuple[int, int]: (駒の位置インデックス, 盤面)
+        """
+        rows, cols = self.size
+        r_pos, c_pos = self.position_map[self.pos]
+
+        def get_state(r_map, c_map):
+            # 駒の位置を変換
+            new_r, new_c = r_map(r_pos, c_pos), c_map(r_pos, c_pos)
+            new_pos_idx = new_r * cols + new_c
+
+            # 盤面のビットを変換
+            new_board = 0
+            # 訪問済みのビットだけループさせる
+            # ただしビット操作だけでやるのは複雑なので、全マス走査する
+            # ボードサイズは最大8x8なので64回ループは許容範囲
+            for i in range(rows * cols):
+                if (self.board >> i) & 1:
+                    curr_r, curr_c = i // cols, i % cols
+                    tr, tc = r_map(curr_r, curr_c), c_map(curr_r, curr_c)
+                    new_board |= 1 << (tr * cols + tc)
+            return (new_pos_idx, new_board)
+
+        # 変換関数の定義
+        ops = [
+            (lambda r, c: r, lambda r, c: c),  # Identity
+            (lambda r, c: r, lambda r, c: cols - 1 - c),  # Horizontal Mirror
+            (lambda r, c: rows - 1 - r, lambda r, c: c),  # Vertical Mirror
+            (lambda r, c: rows - 1 - r, lambda r, c: cols - 1 - c),  # 180 Rotate
+        ]
+
+        # 正方形の場合は対角系も追加
+        if rows == cols:
+            ops.extend(
+                [
+                    (lambda r, c: c, lambda r, c: r),  # Transpose (Diagonal)
+                    (
+                        lambda r, c: cols - 1 - c,
+                        lambda r, c: rows - 1 - r,
+                    ),  # Anti-transpose
+                    (lambda r, c: c, lambda r, c: rows - 1 - r),  # 90 Rotate
+                    (lambda r, c: cols - 1 - c, lambda r, c: r),  # 270 Rotate
+                ]
+            )
+
+        candidates = [get_state(r_op, c_op) for r_op, c_op in ops]
+        return min(candidates)

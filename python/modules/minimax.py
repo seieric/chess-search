@@ -113,50 +113,21 @@ def _filter_symmetric_moves(
     Returns:
         list[tuple[int, int]]: 対称性を考慮して削減された移動候補のリスト
     """
-    rows, cols = board.size
-
-    # 左右対称性
-    is_horizontal_symmetric = board.is_horizontal_symmetric
-    # 上下対称性
-    is_vertical_symmetric = board.is_vertical_symmetric
-
-    if not is_horizontal_symmetric and not is_vertical_symmetric:
-        # 対称性がない場合は削減できない
-        return positions
-
-    # 対称性に基づいて候補を削減
-    result = []
-    seen_canonical = set()
+    unique_moves = []
+    seen_states = set()
 
     for pos in positions:
-        canonical = _get_canonical_position(
-            pos, rows, cols, is_horizontal_symmetric, is_vertical_symmetric
-        )
-        if canonical not in seen_canonical:
-            result.append(pos)
-            seen_canonical.add(canonical)
+        # 試しに移動してみる
+        original_pos = board.make_move(pos)
 
-    return result
+        # 移動後の盤面の正規形を取得
+        canonical_state = board.get_canonical_state()
 
+        if canonical_state not in seen_states:
+            seen_states.add(canonical_state)
+            unique_moves.append(pos)
 
-def _get_canonical_position(
-    pos: tuple[int, int],
-    rows: int,
-    cols: int,
-    is_horizontal_symmetric: bool,
-    is_vertical_symmetric: bool,
-) -> tuple[int, int]:
-    """位置の正規形を返す"""
-    r, c = pos
-    candidates = [(r, c)]
+        # 元に戻す
+        board.undo_move(pos, original_pos)
 
-    if is_horizontal_symmetric:
-        candidates.append((r, cols - 1 - c))
-
-    if is_vertical_symmetric:
-        candidates.append((rows - 1 - r, c))
-
-    if is_horizontal_symmetric and is_vertical_symmetric:
-        candidates.append((rows - 1 - r, cols - 1 - c))
-
-    return min(candidates)
+    return unique_moves
