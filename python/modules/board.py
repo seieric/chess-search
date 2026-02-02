@@ -62,7 +62,7 @@ class Board:
         size: tuple[int, int],
         initial_position: tuple[int, int],
         piece_type: str,
-        num_playout: int = 1500,
+        num_playout: int,
     ):
         """ゲーム状態を表すチェスボードを初期化する
 
@@ -70,6 +70,7 @@ class Board:
             size (tuple[int, int]): チェスボードのサイズ（縦, 横）
             initial_position (tuple[int, int]): 駒の初期位置（縦, 横）
             piece_type (str): 駒の種類（"rook", "king", "queen", "knight"）
+            num_playout (int): プレイアウトの試行回数
         """
         if not (0 < size[0] <= 8 and 0 < size[1] <= 8):
             raise ValueError("ボードのサイズは1から8の範囲で指定してください")

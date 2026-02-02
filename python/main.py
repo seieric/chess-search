@@ -11,9 +11,10 @@ def main(args: argparse.Namespace):
     verbose = args.verbose
     heuristic = args.heuristic
     symmetry = args.symmetry
+    num_playout = args.num_playout
 
     # チェスボードを初期化する
-    board = Board(board_size, initial_position, piece_type)
+    board = Board(board_size, initial_position, piece_type, num_playout)
     board.print_board()
 
     first_player_wins, node_count = minimax(
@@ -52,6 +53,11 @@ if __name__ == "__main__":
         "piece_type",
         type=str,
         help="駒の種類（rook, king, queen, knight）",
+    )
+    parser.add_argument(
+        "num_playout",
+        type=int,
+        help="プレイアウトの試行回数",
     )
     parser.add_argument(
         "--verbose",
