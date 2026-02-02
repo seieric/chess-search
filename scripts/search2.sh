@@ -1,21 +1,21 @@
 #!/bin/sh
 : ${PROGRAM:=python3 python/main.py}
-# 駒がクイーンのとき4x5と5x6の盤面で先手必勝となる場所を探索する
+# 駒がクイーンのとき5x5と6x6の盤面で先手必勝となる場所を探索する
 # 対称性があるため、左上の一部のみを調べる
-echo "[盤面1:4x5]"
-for row in 0 1; do
-  for col in 0 1 2; do
+echo "[盤面1:5x5]"
+for row in 0 1 2; do
+  for col in `seq 0 $row`; do
     echo "初期位置: ($row, $col)"
-    time $PROGRAM 4 5 $row $col queen $@
+    time $PROGRAM 5 5 $row $col queen $@
     echo ""
   done
 done
 
-echo "[盤面2:5x6]"
+echo "[盤面2:6x6]"
 for row in 0 1 2; do
-  for col in 0 1 2; do
+  for col in `seq 0 $row`; do
     echo "初期位置: ($row, $col)"
-    time $PROGRAM 5 6 $row $col queen $@
+    time $PROGRAM 6 6 $row $col queen $@
     echo ""
   done
 done
