@@ -1,4 +1,4 @@
-#!/bin.sh
+#!/bin/sh
 . .venv/bin/activate
 python3 --version
 echo "executing search1"
