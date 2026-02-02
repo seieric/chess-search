@@ -37,9 +37,9 @@ def minimax(
 
     # 一定深さではプレイアウトの結果を返す
     if depth >= MAX_DEPTH:
-        # 現在のプレイヤーが勝つ見込みが高いかどうかを取得
-        player_win_prob = board.get_playout_result()
-        return (player_win_prob if player else 1.0 - player_win_prob), node_count
+        # 先手の勝率を取得
+        first_player_win_prob = board.get_playout_result(player)
+        return first_player_win_prob, node_count
 
     # 移動できるマスを取得する
     available_positions = board.get_available_positions()
