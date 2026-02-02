@@ -85,13 +85,8 @@ class Board:
         self.board: int = 0  # bitの値が0なら未訪問、1なら訪問済み
 
         # 位置からbit-indexを、bit-indexから位置を引けるようにする
-        self.index_map: dict[tuple[int, int], int] = {}
-        self.position_map: dict[int, tuple[int, int]] = {}
-        for i in range(self.size[0]):
-            for j in range(self.size[1]):
-                self.index_map[(i, j)] = i * self.size[1] + j
-        for position, index in self.index_map.items():
-            self.position_map[index] = position
+        self.index_map = self._create_position_index_map(size)
+        self.position_map = self._create_index_position_map(size)
 
         if not (
             0 <= initial_position[0] < size[0] and 0 <= initial_position[1] < size[1]
@@ -102,41 +97,13 @@ class Board:
         # 初期位置を訪問済みとしてマーク
         self.board |= 1 << self.index_map[initial_position]
 
-        # 各位置ごとに、その位置からの移動可能な位置を計算する
-        self._create_available_positions_map()
+        # 各位置からの移動可能な位置を格納したマップ
+        self.available_positions_map = self._create_available_positions_map(
+            piece_type, size
+        )
 
-        # 対称変換用の関数群を定義
-        rows, cols = self.size
-        self.ops = [
-            (lambda r, c: r, lambda r, c: c),  # Identity
-            (lambda r, c: r, lambda r, c: cols - 1 - c),  # Horizontal Mirror
-            (lambda r, c: rows - 1 - r, lambda r, c: c),  # Vertical Mirror
-            (lambda r, c: rows - 1 - r, lambda r, c: cols - 1 - c),  # 180 Rotate
-        ]
-
-        # 正方形の場合は対角系も追加
-        if rows == cols:
-            self.ops.extend(
-                [
-                    (lambda r, c: c, lambda r, c: r),  # Transpose (Diagonal)
-                    (
-                        lambda r, c: cols - 1 - c,
-                        lambda r, c: rows - 1 - r,
-                    ),  # Anti-transpose
-                    (lambda r, c: c, lambda r, c: rows - 1 - r),  # 90 Rotate
-                    (lambda r, c: cols - 1 - c, lambda r, c: r),  # 270 Rotate
-                ]
-            )
-
-        # 対称変換をあらかじめ計算する
-        self.op_maps: list[dict[int, int]] = []
-        for r_op, c_op in self.ops:
-            op_map: dict[int, int] = {}
-            for r in range(self.size[0]):
-                for c in range(self.size[1]):
-                    new_r, new_c = r_op(r, c), c_op(r, c)
-                    op_map[self.index_map[(r, c)]] = self.index_map[(new_r, new_c)]
-            self.op_maps.append(op_map)
+        # 対称変換用のマップ群
+        self.op_maps = self._create_op_maps(size)
 
         self.num_playout = num_playout
 
@@ -213,7 +180,7 @@ class Board:
         Returns:
             bool: 現在のプレイヤーが勝つ見込みが高い場合はTrue、負ける見込みが高い場合はFalse
         """
-        num_current_player_wins = 0
+        num_player_wins = 0
         for _ in range(self.num_playout):
             player = True  # True: 先手, False: 後手
             board = deepcopy(self)
@@ -221,8 +188,8 @@ class Board:
                 available_positions = board.get_available_positions()
                 if not available_positions:
                     if not player:
-                        # 後手が動けない -> 先手の勝ち
-                        num_current_player_wins += 1
+                        # 後手が動けないなら先手の勝ち
+                        num_player_wins += 1
                     break
 
                 # ランダムに移動を選択
@@ -231,43 +198,9 @@ class Board:
 
                 # プレイヤー交代
                 player = not player
+            del board
 
-        return num_current_player_wins * 2 >= self.num_playout
-
-    def _create_available_positions_map(self):
-        """ボード上の各位置に対して移動可能な位置を格納した辞書を作成する"""
-        self.available_positions_map: dict[int, int] = {}
-
-        # 駒の移動設定を取得
-        directions, is_unlimited = PIECE_MOVE_CONFIG[self.piece_type]
-
-        # 各位置から移動可能な位置を計算する
-        for i in range(self.size[0]):
-            for j in range(self.size[1]):
-                start_position = (i, j)
-                bitmask = 0
-                for direction in directions:
-                    # 各方向について、開始位置から移動先を計算
-                    new_pos = (
-                        start_position[0] + direction[0],
-                        start_position[1] + direction[1],
-                    )
-                    while (
-                        0 <= new_pos[0] < self.size[0]
-                        and 0 <= new_pos[1] < self.size[1]
-                    ):
-                        bitmask |= 1 << self.index_map[new_pos]
-                        if not is_unlimited:
-                            # 無制限に移動できない場合はここで終了
-                            break
-
-                        # 与えられた方向上の次の位置をチェックする
-                        new_pos = (
-                            new_pos[0] + direction[0],
-                            new_pos[1] + direction[1],
-                        )
-
-                self.available_positions_map[self.index_map[start_position]] = bitmask
+        return num_player_wins * 2 >= self.num_playout
 
     def get_canonical_state(self) -> tuple[int, int]:
         """現在の盤面状態の正規形（対称変換の中で最小の値）を返す
@@ -290,3 +223,122 @@ class Board:
             candidates.append((new_pos, new_board))
 
         return min(candidates)
+
+    @staticmethod
+    def _create_index_position_map(size: tuple[int, int]) -> dict[int, tuple[int, int]]:
+        """インデックスから位置へのマッピングを作成する
+
+        Args:
+            size (tuple[int, int]): ボードのサイズ（縦, 横）
+
+        Returns:
+            dict[int, tuple[int, int]]: インデックスから位置へのマッピング
+        """
+        position_map: dict[int, tuple[int, int]] = {}
+        for i in range(size[0]):
+            for j in range(size[1]):
+                position_map[i * size[1] + j] = (i, j)
+        return position_map
+
+    @staticmethod
+    def _create_position_index_map(size: tuple[int, int]) -> dict[tuple[int, int], int]:
+        """位置からインデックスへのマッピングを作成する
+
+        Args:
+            size (tuple[int, int]): ボードのサイズ（縦, 横）
+
+        Returns:
+            dict[tuple[int, int], int]: 位置からインデックスへのマッピング
+        """
+        index_map: dict[tuple[int, int], int] = {}
+        for i in range(size[0]):
+            for j in range(size[1]):
+                index_map[(i, j)] = i * size[1] + j
+        return index_map
+
+    @staticmethod
+    def _create_available_positions_map(
+        piece_type: str, size: tuple[int, int]
+    ) -> dict[int, int]:
+        """ボード上の各位置に対して移動可能な位置を格納した辞書を作成する
+
+        Args:
+            piece_type (str): 駒の種類（"rook", "king", "queen", "knight"）
+            size (tuple[int, int]): ボードのサイズ（縦, 横）
+
+        Returns:
+            dict[int, int]: 各位置インデックスに対応する移動可能な位置のビットマスク
+        """
+        available_positions_map: dict[int, int] = {}
+
+        # 駒の移動設定を取得
+        directions, is_unlimited = PIECE_MOVE_CONFIG[piece_type]
+
+        # 各位置から移動可能な位置を計算する
+        for i in range(size[0]):
+            for j in range(size[1]):
+                start_pos = (i, j)
+                bitmask = 0
+                for direction in directions:
+                    # 各方向について、開始位置から移動先を計算
+                    new_pos = (
+                        start_pos[0] + direction[0],
+                        start_pos[1] + direction[1],
+                    )
+                    while 0 <= new_pos[0] < size[0] and 0 <= new_pos[1] < size[1]:
+                        bitmask |= 1 << (new_pos[0] * size[1] + new_pos[1])
+                        if not is_unlimited:
+                            # 無制限に移動できない場合はここで終了
+                            break
+
+                        # 与えられた方向上の次の位置をチェックする
+                        new_pos = (
+                            new_pos[0] + direction[0],
+                            new_pos[1] + direction[1],
+                        )
+
+                available_positions_map[start_pos[0] * size[1] + start_pos[1]] = bitmask
+
+        return available_positions_map
+
+    @staticmethod
+    def _create_op_maps(size: tuple[int, int]) -> list[dict[int, int]]:
+        """対称変換用のマッピングを作成する
+
+        Args:
+            size (tuple[int, int]): ボードのサイズ（縦, 横）
+
+        Returns:
+            list[dict[int, int]]: 各対称変換に対応するインデックスマッピングのリスト
+        """
+        ops = [
+            (lambda r, c: r, lambda r, c: c),  # Identity
+            (lambda r, c: r, lambda r, c: size[1] - 1 - c),  # Horizontal Mirror
+            (lambda r, c: size[0] - 1 - r, lambda r, c: c),  # Vertical Mirror
+            (lambda r, c: size[0] - 1 - r, lambda r, c: size[1] - 1 - c),  # 180 Rotate
+        ]
+
+        # 正方形の場合は対角系も追加
+        if size[0] == size[1]:
+            ops.extend(
+                [
+                    (lambda r, c: c, lambda r, c: r),  # Transpose (Diagonal)
+                    (
+                        lambda r, c: size[1] - 1 - c,
+                        lambda r, c: size[0] - 1 - r,
+                    ),  # Anti-transpose
+                    (lambda r, c: c, lambda r, c: size[0] - 1 - r),  # 90 Rotate
+                    (lambda r, c: size[1] - 1 - c, lambda r, c: r),  # 270 Rotate
+                ]
+            )
+
+        op_maps: list[dict[int, int]] = []
+        for r_op, c_op in ops:
+            op_map: dict[int, int] = {}
+            for r in range(size[0]):
+                for c in range(size[1]):
+                    new_r, new_c = r_op(r, c), c_op(r, c)
+                    op_map[r * size[1] + c] = new_r * size[1] + new_c
+            op_maps.append(op_map)
+
+        return op_maps
