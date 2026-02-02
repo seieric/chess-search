@@ -1,7 +1,6 @@
 """チェスボードの定義"""
 
 import random
-from copy import deepcopy
 
 # (directions, is_unlimited) の形式で駒の移動設定を定義
 PIECE_MOVE_CONFIG = {
