@@ -97,6 +97,29 @@ class Board:
         # 各位置ごとに、その位置からの移動可能な位置を計算する
         self._create_available_positions_map()
 
+        # 対称変換用の関数群を定義
+        rows, cols = self.size
+        self.ops = [
+            (lambda r, c: r, lambda r, c: c),  # Identity
+            (lambda r, c: r, lambda r, c: cols - 1 - c),  # Horizontal Mirror
+            (lambda r, c: rows - 1 - r, lambda r, c: c),  # Vertical Mirror
+            (lambda r, c: rows - 1 - r, lambda r, c: cols - 1 - c),  # 180 Rotate
+        ]
+
+        # 正方形の場合は対角系も追加
+        if rows == cols:
+            self.ops.extend(
+                [
+                    (lambda r, c: c, lambda r, c: r),  # Transpose (Diagonal)
+                    (
+                        lambda r, c: cols - 1 - c,
+                        lambda r, c: rows - 1 - r,
+                    ),  # Anti-transpose
+                    (lambda r, c: c, lambda r, c: rows - 1 - r),  # 90 Rotate
+                    (lambda r, c: cols - 1 - c, lambda r, c: r),  # 270 Rotate
+                ]
+            )
+
     def make_move(self, position: tuple[int, int]) -> tuple[int, int]:
         """駒を新しい位置に移動し、その位置を訪問済みとしてマークする
 
@@ -225,27 +248,5 @@ class Board:
                     new_board |= 1 << (tr * cols + tc)
             return (new_pos_idx, new_board)
 
-        # 変換関数の定義
-        ops = [
-            (lambda r, c: r, lambda r, c: c),  # Identity
-            (lambda r, c: r, lambda r, c: cols - 1 - c),  # Horizontal Mirror
-            (lambda r, c: rows - 1 - r, lambda r, c: c),  # Vertical Mirror
-            (lambda r, c: rows - 1 - r, lambda r, c: cols - 1 - c),  # 180 Rotate
-        ]
-
-        # 正方形の場合は対角系も追加
-        if rows == cols:
-            ops.extend(
-                [
-                    (lambda r, c: c, lambda r, c: r),  # Transpose (Diagonal)
-                    (
-                        lambda r, c: cols - 1 - c,
-                        lambda r, c: rows - 1 - r,
-                    ),  # Anti-transpose
-                    (lambda r, c: c, lambda r, c: rows - 1 - r),  # 90 Rotate
-                    (lambda r, c: cols - 1 - c, lambda r, c: r),  # 270 Rotate
-                ]
-            )
-
-        candidates = [get_state(r_op, c_op) for r_op, c_op in ops]
+        candidates = [get_state(r_op, c_op) for r_op, c_op in self.ops]
         return min(candidates)
