@@ -1,5 +1,8 @@
 """チェスボードの定義"""
 
+import random
+from copy import deepcopy
+
 # (directions, is_unlimited) の形式で駒の移動設定を定義
 PIECE_MOVE_CONFIG = {
     "rook": (
@@ -55,7 +58,11 @@ PIECE_MOVE_CONFIG = {
 
 class Board:
     def __init__(
-        self, size: tuple[int, int], initial_position: tuple[int, int], piece_type: str
+        self,
+        size: tuple[int, int],
+        initial_position: tuple[int, int],
+        piece_type: str,
+        num_playout: int = 1500,
     ):
         """ゲーム状態を表すチェスボードを初期化する
 
@@ -119,6 +126,8 @@ class Board:
                     (lambda r, c: cols - 1 - c, lambda r, c: r),  # 270 Rotate
                 ]
             )
+
+        self.num_playout = num_playout
 
     def make_move(self, position: tuple[int, int]) -> tuple[int, int]:
         """駒を新しい位置に移動し、その位置を訪問済みとしてマークする
@@ -186,6 +195,33 @@ class Board:
             if (available_positions >> i) & 1:
                 positions.append(self.position_map[i])
         return positions
+
+    def get_playout_result(self) -> bool:
+        """ランダムに手を選んでゲームを進めた場合に現在のプレイヤーが勝ちそうかどうかを返す
+
+        Returns:
+            bool: 現在のプレイヤーが勝つ見込みが高い場合はTrue、負ける見込みが高い場合はFalse
+        """
+        num_current_player_wins = 0
+        for _ in range(self.num_playout):
+            player = True  # True: 先手, False: 後手
+            board = deepcopy(self)
+            while True:
+                available_positions = board.get_available_positions()
+                if not available_positions:
+                    if not player:
+                        # 後手が動けない -> 先手の勝ち
+                        num_current_player_wins += 1
+                    break
+
+                # ランダムに移動を選択
+                chosen_position = random.choice(available_positions)
+                board.make_move(chosen_position)
+
+                # プレイヤー交代
+                player = not player
+
+        return num_current_player_wins * 2 >= self.num_playout
 
     def _create_available_positions_map(self):
         """ボード上の各位置に対して移動可能な位置を格納した辞書を作成する"""

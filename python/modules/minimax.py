@@ -5,6 +5,9 @@ from .board import Board
 # 対称性を考慮する最大探索深さ
 MAX_DEPTH_FOR_SYMMETRY = 3
 
+# 探索の最大深さ
+MAX_DEPTH = 10
+
 
 def minimax(
     board: Board,
@@ -29,6 +32,12 @@ def minimax(
     """
     # 局面数をカウント（この関数が呼ばれるたびに1局面）
     node_count = 1
+
+    # 一定深さではプレイアウトの結果を返す
+    if depth >= MAX_DEPTH:
+        # 現在のプレイヤーが勝つ見込みが高いかどうかを取得
+        player_win = board.get_playout_result()
+        return (player_win == player), node_count
 
     # 移動できるマスを取得する
     available_positions = board.get_available_positions()
