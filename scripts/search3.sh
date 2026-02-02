@@ -1,5 +1,5 @@
 #!/bin/sh
-: ${PROGRAM:=python3 python/main.py}
+: ${PROGRAM:=python3 main.py}
 # 駒がナイトのとき7x7と8x8の盤面で先手必勝となる場所を探索する
 
 echo "[7x7盤面]"

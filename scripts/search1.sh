@@ -1,5 +1,5 @@
 #!/bin/sh
-: ${PROGRAM:=python3 python/main.py}
+: ${PROGRAM:=python3 main.py}
 # 初期状態1・ルーク
 echo "[初期状態1・ルーク]"
 time $PROGRAM 3 3 2 2 rook 1000 $@

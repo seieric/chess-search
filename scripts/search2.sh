@@ -1,5 +1,5 @@
 #!/bin/sh
-: ${PROGRAM:=python3 python/main.py}
+: ${PROGRAM:=python3 main.py}
 # 駒がクイーンのとき5x5と6x6の盤面で先手必勝となる場所を探索する
 # 対称性があるため、左上の一部のみを調べる
 echo "[盤面1:5x5]"
