@@ -18,7 +18,6 @@ def minimax(
     symmetry: bool,
     alpha: float,
     beta: float,
-    memo: dict[tuple[int, int, bool], float],
 ) -> tuple[float, int]:
     """minimax法を用いてゲーム木を探索する
 
@@ -29,16 +28,10 @@ def minimax(
         verbose (bool): ログ出力を行うかどうか
         heuristic (bool): 移動順序の最適化を行うかどうか
         symmetry (bool): 対称性を考慮して探索を削減するかどうか
-        memo (dict): メモ化用の辞書
 
     Returns:
         tuple[float, int]: (先手の勝利確率, 探索した局面数)
     """
-    # メモ化の確認
-    state_key = (board.board, board.pos, player)
-    if state_key in memo:
-        return memo[state_key], 0
-
     # 局面数をカウント（この関数が呼ばれるたびに1局面）
     node_count = 1
 
@@ -92,7 +85,6 @@ def minimax(
             symmetry,
             alpha,
             beta,
-            memo,
         )
         node_count += child_nodes
         board.undo_move(position, original_pos)
@@ -113,8 +105,6 @@ def minimax(
             if alpha >= beta:
                 break
 
-    # 結果をメモ化
-    memo[state_key] = best_value
     return best_value, node_count
 
 
