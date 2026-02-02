@@ -190,9 +190,12 @@ class Board:
 
         # 位置リストを生成
         positions: list[int] = []
-        for i in range(self.len):
-            if (available_positions >> i) & 1:
-                positions.append(i)
+        while available_positions:
+            # 最下位の1の位置を取得
+            i = (available_positions & -available_positions).bit_length() - 1
+            positions.append(i)
+            # 最下位の1を消す
+            available_positions &= available_positions - 1
         return positions
 
     def get_playout_result(self, current_player: bool) -> float:
