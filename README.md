@@ -59,3 +59,29 @@ uv run main.py --heuristic 4 4 0 0 rook 100 0
 uv run main.py --heuristic 4 4 0 0 rook 5 100
 ```
 このコマンドでは深さ5を超えると各盤面で100回のプレイアウトが行われ、その勝率がその盤面の評価値として返されます。
+
+### ソースの説明
+```
+.
+├── main.py
+├── modules
+│   ├── board.py
+│   ├── __init__.py
+│   └── minimax.py
+├── pyproject.toml
+├── README.md
+├── scripts
+│   ├── search1.sh
+│   ├── search2.sh
+│   └── search3.sh
+└── uv.lock
+```
+
+- `main.py`：中心となるプログラム。このプログラムが`minimax.py`や`board.py`をインポートしている。
+- `modules/board.py`：チェスボードのクラスの定義
+- `modules/minimax.py`：探索アルゴリズムの実装
+- `modules/__init__.py`：Pythonのモジュール関連ファイル
+- `pyproject.toml`：必要なパッケージ等の管理ファイル
+- `README.md`：本ファイル
+- `scripts/searchX.sh`：小問Xの探索に利用するコマンドを記したシェルスクリプト
+- `uv.lock`：パッケージ管理ツールuvのバージョンロックファイル
