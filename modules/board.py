@@ -281,58 +281,58 @@ class Board:
     @staticmethod
     def _create_available_positions_map(
         piece_type: str, size: tuple[int, int]
-    ) -> dict[int, int]:
-        """ボード上の各位置に対して移動可能な位置を格納した辞書を作成する
+    ) -> list[int]:
+        """ボード上の各位置に対して移動可能な位置を格納したリストを作成する
 
         Args:
             piece_type (str): 駒の種類（"rook", "king", "queen", "knight"）
             size (tuple[int, int]): ボードのサイズ（縦, 横）
 
         Returns:
-            dict[int, int]: 各位置インデックスに対応する移動可能な位置のビットマスク
+            list: 各位置インデックスに対応する移動可能な位置のビットマスクのリスト
         """
-        available_positions_map: dict[int, int] = {}
+        available_positions_map = [0] * (size[0] * size[1])
 
         # 駒の移動設定を取得
         directions, is_unlimited = PIECE_MOVE_CONFIG[piece_type]
 
         # 各位置から移動可能な位置を計算する
-        for i in range(size[0]):
-            for j in range(size[1]):
-                start_pos = (i, j)
-                bitmask = 0
-                for direction in directions:
-                    # 各方向について、開始位置から移動先を計算
+        for i in range(size[0] * size[1]):
+            start_pos = (i // size[1], i % size[1])
+            bitmask = 0
+            for direction in directions:
+                # 各方向について、開始位置から移動先を計算
+                new_pos = (
+                    start_pos[0] + direction[0],
+                    start_pos[1] + direction[1],
+                )
+                while 0 <= new_pos[0] < size[0] and 0 <= new_pos[1] < size[1]:
+                    bitmask |= 1 << (new_pos[0] * size[1] + new_pos[1])
+                    if not is_unlimited:
+                        # 無制限に移動できない場合はここで終了
+                        break
+
+                    # 与えられた方向上の次の位置をチェックする
                     new_pos = (
-                        start_pos[0] + direction[0],
-                        start_pos[1] + direction[1],
+                        new_pos[0] + direction[0],
+                        new_pos[1] + direction[1],
                     )
-                    while 0 <= new_pos[0] < size[0] and 0 <= new_pos[1] < size[1]:
-                        bitmask |= 1 << (new_pos[0] * size[1] + new_pos[1])
-                        if not is_unlimited:
-                            # 無制限に移動できない場合はここで終了
-                            break
 
-                        # 与えられた方向上の次の位置をチェックする
-                        new_pos = (
-                            new_pos[0] + direction[0],
-                            new_pos[1] + direction[1],
-                        )
-
-                available_positions_map[start_pos[0] * size[1] + start_pos[1]] = bitmask
+            available_positions_map[i] = bitmask
 
         return available_positions_map
 
     @staticmethod
-    def _create_op_maps(size: tuple[int, int]) -> list[dict[int, int]]:
+    def _create_op_maps(size: tuple[int, int]) -> list[list[int]]:
         """対称変換用のマッピングを作成する
 
         Args:
             size (tuple[int, int]): ボードのサイズ（縦, 横）
 
         Returns:
-            list[dict[int, int]]: 各対称変換に対応するインデックスマッピングのリスト
+            list[list[int]]: 各対称変換に対応するインデックスマッピングのリスト
         """
+        board_len = size[0] * size[1]
         ops = [
             (lambda r, c: r, lambda r, c: c),  # Identity
             (lambda r, c: r, lambda r, c: size[1] - 1 - c),  # Horizontal Mirror
@@ -354,9 +354,9 @@ class Board:
                 ]
             )
 
-        op_maps: list[dict[int, int]] = []
+        op_maps: list[list[int]] = []
         for r_op, c_op in ops:
-            op_map: dict[int, int] = {}
+            op_map: list[int] = [0] * board_len
             for r in range(size[0]):
                 for c in range(size[1]):
                     new_r, new_c = r_op(r, c), c_op(r, c)
