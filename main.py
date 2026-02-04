@@ -4,20 +4,17 @@ from modules import Board, minimax
 
 
 def main(args: argparse.Namespace):
-    # 引数からチェスボードの初期設定を取得する
-    board_size = (args.height, args.width)
-    initial_position = (args.initial_row, args.initial_col)
-    piece_type = args.piece_type
-    verbose = args.verbose
-    heuristic = args.heuristic
-    num_playout = args.num_playout
-
     # チェスボードを初期化する
-    board = Board(board_size, initial_position, piece_type, num_playout)
+    board = Board(
+        (args.height, args.width),  # ボードサイズ
+        (args.initial_row, args.initial_col),  # 駒の初期位置
+        args.piece_type,
+        args.num_playout,
+    )
     board.print_board()
 
     first_player_win_prob, node_count = minimax(
-        board, 0, True, verbose, heuristic, 0.0, 1.0
+        board, 0, True, args.verbose, args.heuristic, args.max_depth, 0.0, 1.0
     )
     if first_player_win_prob > 0.5:
         print(f"先手必勝(先手勝率: {first_player_win_prob:.2%})")
@@ -52,6 +49,11 @@ if __name__ == "__main__":
         "piece_type",
         type=str,
         help="駒の種類（rook, king, queen, knight）",
+    )
+    parser.add_argument(
+        "max_depth",
+        type=int,
+        help="探索の最大深さ（これを超えるとプレイアウトの結果を返す）",
     )
     parser.add_argument(
         "num_playout",

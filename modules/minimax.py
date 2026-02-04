@@ -2,9 +2,6 @@
 
 from .board import Board
 
-# 探索の最大深さ
-MAX_DEPTH = 40
-
 _transposition_table: dict[int, float] = {}
 
 
@@ -14,6 +11,7 @@ def minimax(
     player: bool,
     verbose: bool,
     heuristic: bool,
+    max_depth: int,
     alpha: float,
     beta: float,
 ) -> tuple[float, int]:
@@ -25,6 +23,9 @@ def minimax(
         player (bool): 現在のプレイヤー（True: 先手, False: 後手）
         verbose (bool): ログ出力を行うかどうか
         heuristic (bool): 移動順序の最適化を行うかどうか
+        max_depth (int): 探索の最大深さ
+        alpha (float): Alpha値
+        beta (float): Beta値
 
     Returns:
         tuple[float, int]: (先手の勝利確率, 探索した局面数)
@@ -37,7 +38,7 @@ def minimax(
     node_count = 1
 
     # 一定深さではプレイアウトの結果を返す
-    if depth >= MAX_DEPTH:
+    if depth >= max_depth:
         # 先手の勝率を取得
         first_player_win_prob = board.get_playout_result(player)
         return first_player_win_prob, node_count
@@ -80,6 +81,7 @@ def minimax(
             not player,
             verbose,
             heuristic,
+            max_depth,
             alpha,
             beta,
         )
