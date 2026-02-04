@@ -110,6 +110,12 @@ class Board:
             for i in range(self.len)
         ]
 
+        # ヒューリスティクス用の各位置から移動可能なマス数 (index -> count)
+        self.mobility_map = [
+            bin(self.available_positions_map[i]).count("1")
+            for i in range(self.len)
+        ]
+
         self.num_playout = num_playout
 
     def get_state(self) -> tuple[int, int]:

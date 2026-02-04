@@ -111,12 +111,16 @@ def minimax(
 def _sort_moves_by_heuristic(board: Board, positions: list[int]):
     """ヒューリスティクスに基づき移動候補を並べ替える
 
-    盤面の端や隅に近く詰みやすそうな手を先に探索できるようにする。
-    （純粋に選択肢の少ない手を調べようとするとこの処理自体が重くなってしまう。）
+    移動後に相手の選択肢が少なくなる手を優先する。
+    また、盤面の端や隅に近い位置も優先する。
 
     Args:
         board (Board): 現在のチェスボードの状態
         positions (list[int]): 移動候補のリスト
     """
-    # 端に近い位置を優先
-    positions.sort(key=lambda pos: -board.dist_from_center_map[pos])
+
+    def score(pos: int) -> float:
+        # 移動可能な位置数が少ない位置を優先して相手の選択肢を減らし、端に近い位置を優先して詰みやすくする
+        return -board.mobility_map[pos] * 5 + board.dist_from_center_map[pos]
+
+    positions.sort(key=score, reverse=True)
