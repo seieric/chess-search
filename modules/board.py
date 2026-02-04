@@ -112,8 +112,7 @@ class Board:
 
         # ヒューリスティクス用の各位置から移動可能なマス数 (index -> count)
         self.mobility_map = [
-            bin(self.available_positions_map[i]).count("1")
-            for i in range(self.len)
+            self.available_positions_map[i].bit_count() for i in range(self.len)
         ]
 
         self.num_playout = num_playout
@@ -242,7 +241,7 @@ class Board:
         Returns:
             tuple[int, int]: (駒の位置インデックス, 盤面)
         """
-        candidates: list[tuple[int, int]] = []
+        min_pos, min_board = self.len, -1  # 初期値（必ず更新される）
         for op_map in self.op_maps:
             # 駒の位置を変換
             new_pos = op_map[self.pos]
@@ -254,9 +253,12 @@ class Board:
             for i in range(self.len):
                 if (self.board >> i) & 1:
                     new_board |= 1 << op_map[i]
-            candidates.append((new_pos, new_board))
 
-        return min(candidates)
+            # 最小値を更新
+            if new_pos < min_pos or (new_pos == min_pos and new_board < min_board):
+                min_pos, min_board = new_pos, new_board
+
+        return min_pos, min_board
 
     def get_state_key(self) -> int:
         """現在の盤面状態の一意なキーを生成する
