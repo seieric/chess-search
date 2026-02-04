@@ -10,7 +10,6 @@ def main(args: argparse.Namespace):
     piece_type = args.piece_type
     verbose = args.verbose
     heuristic = args.heuristic
-    symmetry = args.symmetry
     num_playout = args.num_playout
 
     # チェスボードを初期化する
@@ -18,7 +17,7 @@ def main(args: argparse.Namespace):
     board.print_board()
 
     first_player_win_prob, node_count = minimax(
-        board, 0, True, verbose, heuristic, symmetry, 0.0, 1.0
+        board, 0, True, verbose, heuristic, 0.0, 1.0
     )
     if first_player_win_prob > 0.5:
         print(f"先手必勝(先手勝率: {first_player_win_prob:.2%})")
@@ -68,11 +67,6 @@ if __name__ == "__main__":
         "--heuristic",
         action="store_true",
         help="ヒューリスティクスの利用",
-    )
-    parser.add_argument(
-        "--symmetry",
-        action="store_true",
-        help="対称性の利用",
     )
     args = parser.parse_args()
     main(args)

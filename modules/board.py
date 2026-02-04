@@ -252,6 +252,16 @@ class Board:
 
         return min(candidates)
 
+    def get_state_key(self) -> int:
+        """現在の盤面状態の一意なキーを生成する
+
+        Returns:
+            int: 盤面状態のキー
+        """
+        canonical_pos, canonical_board = self.get_canonical_state()
+        # 駒の位置を上位ビットに、盤面を下位ビットに結合してキーを生成
+        return (canonical_pos << 64) | canonical_board
+
     @staticmethod
     def _create_position_index_map(size: tuple[int, int]) -> dict[tuple[int, int], int]:
         """位置からインデックスへのマッピングを作成する

@@ -2,11 +2,10 @@
 
 from .board import Board
 
-# 対称性を考慮する最大探索深さ
-MAX_DEPTH_FOR_SYMMETRY = 3
-
 # 探索の最大深さ
 MAX_DEPTH = 40
+
+_transposition_table: dict[int, float] = {}
 
 
 def minimax(
@@ -15,7 +14,6 @@ def minimax(
     player: bool,
     verbose: bool,
     heuristic: bool,
-    symmetry: bool,
     alpha: float,
     beta: float,
 ) -> tuple[float, int]:
@@ -27,11 +25,14 @@ def minimax(
         player (bool): 現在のプレイヤー（True: 先手, False: 後手）
         verbose (bool): ログ出力を行うかどうか
         heuristic (bool): 移動順序の最適化を行うかどうか
-        symmetry (bool): 対称性を考慮して探索を削減するかどうか
 
     Returns:
         tuple[float, int]: (先手の勝利確率, 探索した局面数)
     """
+    # transposition tableのキーを生成
+    state_key = board.get_state_key()
+    if state_key in _transposition_table:
+        return _transposition_table[state_key], 0
     # 局面数をカウント（この関数が呼ばれるたびに1局面）
     node_count = 1
 
@@ -47,11 +48,8 @@ def minimax(
     # 移動できるマスがなければ現在のプレイヤーの負けとなり終了
     if not available_positions:
         # 現在のプレイヤーの負け、つまり、もう一方のプレイヤーの勝ち
+        _transposition_table[state_key] = 0.0 if player else 1.0
         return (0.0 if player else 1.0), node_count
-
-    # 対称性を考慮
-    if symmetry and depth <= MAX_DEPTH_FOR_SYMMETRY:
-        available_positions = _filter_symmetric_moves(board, available_positions)
 
     # 移動順序を最適化
     if heuristic:
@@ -82,7 +80,6 @@ def minimax(
             not player,
             verbose,
             heuristic,
-            symmetry,
             alpha,
             beta,
         )
@@ -105,6 +102,7 @@ def minimax(
             if alpha >= beta:
                 break
 
+    _transposition_table[state_key] = best_value
     return best_value, node_count
 
 
@@ -120,33 +118,3 @@ def _sort_moves_by_heuristic(board: Board, positions: list[int]):
     """
     # 端に近い位置を優先
     positions.sort(key=lambda pos: -board.dist_from_center_map[pos])
-
-
-def _filter_symmetric_moves(board: Board, positions: list[int]) -> list[int]:
-    """左右上下対称となる手を除外し、探索候補を削減したリストを返す
-
-    Args:
-        board (Board): 現在のチェスボードの状態
-        positions (list[int]): 移動候補のリスト
-
-    Returns:
-        list[int]: 対称性を考慮して削減された移動候補のリスト
-    """
-    unique_moves = []
-    seen_states = set()
-
-    for pos in positions:
-        # 試しに移動してみる
-        original_pos = board.make_move(pos)
-
-        # 移動後の盤面の正規形を取得
-        canonical_state = board.get_canonical_state()
-
-        if canonical_state not in seen_states:
-            seen_states.add(canonical_state)
-            unique_moves.append(pos)
-
-        # 元に戻す
-        board.undo_move(pos, original_pos)
-
-    return unique_moves
